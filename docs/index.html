@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AWS Prep Dashboard — Santiago Lopez</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="data.js"></script>
   <style>
     :root {
@@ -242,18 +243,70 @@
     .domain-pct { font-weight: 600; font-size: 13px; width: 36px; text-align: right; }
     .domain-bar { flex: 2; }
 
-    .subtopic-list { margin-top: 8px; padding-left: 12px; }
-    .subtopic-item {
+    /* ── Stage bars ── */
+    .stage-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 3px 0;
-      color: var(--text2);
-      font-size: 12px;
+      margin-top: 5px;
+      font-size: 11px;
     }
-    .subtopic-item.done { color: var(--green); }
-    .subtopic-check { width: 14px; height: 14px; border: 1px solid var(--border); border-radius: 3px; display: inline-block; flex-shrink: 0; }
-    .subtopic-item.done .subtopic-check { background: var(--green); border-color: var(--green); }
+    .stage-label { color: var(--text2); width: 58px; flex-shrink: 0; }
+    .stage-bar-bg {
+      flex: 1;
+      background: var(--surface2);
+      border-radius: 3px;
+      height: 5px;
+      overflow: hidden;
+    }
+    .stage-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .stage-val { width: 52px; text-align: right; font-weight: 600; }
+
+    /* ── Subtopic chips ── */
+    .subtopic-blocks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .s-chip {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid;
+      white-space: nowrap;
+    }
+    .s-none     { background: var(--surface2); border-color: var(--border); color: var(--text2); }
+    .s-studied  { background: rgba(88,166,255,0.12); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
+    .s-practiced { background: rgba(63,185,80,0.12); border-color: rgba(63,185,80,0.4); color: #3fb950; }
+    .s-chip { cursor: pointer; }
+    .s-chip:hover { opacity: 0.8; }
+
+    /* ── Subtopic popover ── */
+    #s-popover {
+      position: fixed;
+      z-index: 999;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      min-width: 220px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    #s-popover .pop-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    #s-popover .pop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+    #s-popover .pop-row:last-child { border-bottom: none; }
+    #s-popover .pop-val { font-weight: 600; }
 
     /* ── Growth cards ── */
     .growth-grid {
@@ -347,6 +400,7 @@
   <a href="#roles">Roles</a>
   <a href="#path">Certificaciones</a>
   <a href="#progress">Progreso</a>
+  <a href="#time">Tiempo</a>
   <a href="#growth">Carrera</a>
   <a href="#log">Sesiones</a>
 </nav>
@@ -387,6 +441,26 @@
   <section id="progress">
     <div class="section-title"><span class="icon">◑</span> Progreso por Certificación</div>
     <div id="cert-details"></div>
+  </section>
+
+  <!-- ── Time Tracking ── -->
+  <section id="time">
+    <div class="section-title"><span class="icon">◷</span> Tiempo — Planificado vs Real</div>
+    <div id="time-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>
+    <div class="charts-row" style="margin-bottom:16px">
+      <div class="chart-card">
+        <div class="card-title">Horas por bloque — planificado vs real</div>
+        <canvas id="timeBarChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title">Acumulado — trayectoria planificada vs real</div>
+        <canvas id="timeCumulativeChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Horas efectivas por semana</div>
+      <canvas id="timeWeeklyChart" style="max-height:200px"></canvas>
+    </div>
   </section>
 
   <!-- ── Career Growth ── -->
@@ -456,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildRoles(d.roles);
   buildCertPath(d.certifications);
   buildCertDetails(d.certifications);
+  buildTimeTracking(d.timeTracking, d.studyLog);
   buildGrowth(d.growth);
   buildLog(d.studyLog);
 
@@ -480,22 +555,42 @@ function buildRadar(radar) {
   const labels = radar.map(r => r.label);
   const scores = radar.map(r => r.score);
   const colors = scores.map(scoreColor);
+  const snapshot = window.PROFILE_DATA.radarSnapshot;
+
+  const datasets = [];
+
+  // Ghost / watermark layer — snapshot anterior
+  if (snapshot && snapshot.scores && snapshot.scores.length === scores.length) {
+    datasets.push({
+      label: snapshot.label || 'Anterior',
+      data: snapshot.scores,
+      borderColor: 'rgba(139,148,158,0.25)',
+      backgroundColor: 'rgba(139,148,158,0.06)',
+      pointBackgroundColor: 'rgba(139,148,158,0.25)',
+      pointBorderColor: 'rgba(139,148,158,0.25)',
+      pointRadius: 2,
+      borderWidth: 1,
+      borderDash: [3, 3],
+      order: 2
+    });
+  }
+
+  // Current layer — encima
+  datasets.push({
+    label: 'Actual',
+    data: scores,
+    borderColor: '#58a6ff',
+    backgroundColor: 'rgba(88,166,255,0.12)',
+    pointBackgroundColor: colors,
+    pointBorderColor: colors,
+    pointRadius: 4,
+    borderWidth: 2,
+    order: 1
+  });
 
   new Chart(document.getElementById('radarChart'), {
     type: 'radar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Score',
-        data: scores,
-        borderColor: '#58a6ff',
-        backgroundColor: 'rgba(88,166,255,0.12)',
-        pointBackgroundColor: colors,
-        pointBorderColor: colors,
-        pointRadius: 4,
-        borderWidth: 2
-      }]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       scales: {
@@ -508,12 +603,23 @@ function buildRadar(radar) {
         }
       },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: !!snapshot,
+          labels: {
+            color: '#8b949e',
+            font: { size: 11 },
+            boxWidth: 12,
+            filter: item => item.text !== 'Actual' || !snapshot
+          }
+        },
         tooltip: {
           callbacks: {
             label: ctx => {
-              const item = window.PROFILE_DATA.radar[ctx.dataIndex];
-              return [`${ctx.parsed.r}/100`, item.notes];
+              if (ctx.dataset.order === 1) {
+                const item = window.PROFILE_DATA.radar[ctx.dataIndex];
+                return [`Actual: ${ctx.parsed.r}/100`, item.notes];
+              }
+              return `${ctx.dataset.label}: ${ctx.parsed.r}/100`;
             }
           }
         }
@@ -597,20 +703,236 @@ function buildCertPath(certs) {
         <div class="cert-code">${cert.code}</div>
         <div class="cert-note">${cert.note}</div>
         ${cert.estimatedWeeks ? `<div class="cert-weeks">~${cert.estimatedWeeks} semanas</div>` : ''}
-        ${cert.overallProgress !== undefined ? `
+        ${cert.domains && cert.domains.length > 0 ? (() => {
+            const p = Math.round(cert.domains.reduce((acc, d) => acc + domainProgress(d) * d.weight, 0) / 100);
+            return `
+          <div class="cert-overall">
+            <div class="progress-label">
+              <span style="font-size:11px;color:var(--text2)">Progreso general</span>
+              <span style="font-size:11px;font-weight:600">${p}%</span>
+            </div>
+            ${renderProgressBar(p, scoreColor(p))}
+          </div>`;
+          })() : cert.overallProgress !== undefined ? `
           <div class="cert-overall">
             <div class="progress-label">
               <span style="font-size:11px;color:var(--text2)">Progreso general</span>
               <span style="font-size:11px;font-weight:600">${cert.overallProgress}%</span>
             </div>
             ${renderProgressBar(cert.overallProgress, scoreColor(cert.overallProgress))}
-          </div>
-        ` : ''}
+          </div>` : ''}
       </div>
       ${arrow}
     `;
   }).join('');
 }
+
+// ── Progress helpers ─────────────────────────────────────────────────────────
+
+function subtopicStage(s) {
+  if (s.practiced) return 'practiced';
+  if (s.quizScore !== null && s.quizScore !== undefined) return 'quiz';
+  if ((s.introProgress || 0) > 0) return 'studied';
+  return 'none';
+}
+
+function quizChipStyle(score) {
+  if (score >= 85) return 'background:rgba(63,185,80,0.15);border-color:rgba(63,185,80,0.5);color:#3fb950';
+  if (score >= 70) return 'background:rgba(210,153,34,0.15);border-color:rgba(210,153,34,0.5);color:#d29922';
+  return 'background:rgba(248,81,73,0.12);border-color:rgba(248,81,73,0.4);color:#f85149';
+}
+
+function quizBarColor(score) {
+  if (score >= 85) return '#3fb950';
+  if (score >= 70) return '#d29922';
+  return '#f85149';
+}
+
+function domainProgress(d) {
+  if (!d.subtopics || d.subtopics.length === 0) return d.progress || 0;
+  const score = s => {
+    const intro    = (s.introProgress || 0) * 0.30;
+    const quiz     = (s.quizScore != null) ? s.quizScore * 0.50 : 0;
+    const practice = s.practiced ? 20 : 0;
+    return Math.min(100, intro + quiz + practice);
+  };
+  return Math.round(d.subtopics.reduce((acc, s) => acc + score(s), 0) / d.subtopics.length);
+}
+
+window._stageRegistry = {};
+
+function renderStageBars(subtopics, domainKey) {
+  const total = subtopics.length;
+  if (!total) return '';
+  window._stageRegistry[domainKey] = subtopics;
+  const quizzed    = subtopics.filter(s => s.quizScore != null);
+  const practicedN = subtopics.filter(s => s.practiced).length;
+  const introPct   = Math.round(subtopics.reduce((a, s) => a + (s.introProgress || 0), 0) / total);
+  const practicePct = Math.round((practicedN / total) * 100);
+  const quizAvg    = quizzed.length ? Math.round(quizzed.reduce((a, s) => a + s.quizScore, 0) / quizzed.length) : null;
+  const qColor     = quizAvg != null ? quizBarColor(quizAvg) : '#30363d';
+  const qLabel     = quizAvg != null ? `${quizAvg}% (${quizzed.length}/${total})` : '—';
+  return `
+    <div class="stage-row" data-stage-bar="${domainKey}:intro">
+      <span class="stage-label">Intro</span>
+      <div class="stage-bar-bg"><div class="stage-bar-fill" style="width:${introPct}%;background:#58a6ff"></div></div>
+      <span class="stage-val" style="color:#58a6ff">${introPct}%</span>
+    </div>
+    <div class="stage-row" data-stage-bar="${domainKey}:quiz">
+      <span class="stage-label">Quiz</span>
+      <div class="stage-bar-bg"><div class="stage-bar-fill" style="width:${quizAvg||0}%;background:${qColor}"></div></div>
+      <span class="stage-val" style="color:${qColor}">${qLabel}</span>
+    </div>
+    <div class="stage-row" data-stage-bar="${domainKey}:practice">
+      <span class="stage-label">Práctica</span>
+      <div class="stage-bar-bg"><div class="stage-bar-fill" style="width:${practicePct}%;background:#3fb950"></div></div>
+      <span class="stage-val" style="color:#8b949e">${practicePct}%</span>
+    </div>`;
+}
+
+window._chipRegistry = {};
+
+function renderSubtopicBlocks(subtopics, domainKey) {
+  return subtopics.map((s, i) => {
+    const id = `${domainKey}-${i}`;
+    window._chipRegistry[id] = s;
+    const stage = subtopicStage(s);
+    if (stage === 'practiced')
+      return `<span class="s-chip s-practiced" data-chip="${id}">✓ ${s.name}</span>`;
+    if (stage === 'quiz')
+      return `<span class="s-chip" style="${quizChipStyle(s.quizScore)}" data-chip="${id}">${s.name} · ${s.quizScore}%</span>`;
+    if (stage === 'studied')
+      return `<span class="s-chip s-studied" data-chip="${id}">${s.name} ${s.introProgress}%</span>`;
+    return `<span class="s-chip s-none" data-chip="${id}">${s.name}</span>`;
+  }).join('');
+}
+
+
+document.addEventListener('mouseover', (e) => {
+  const stageBar = e.target.closest('[data-stage-bar]');
+  if (stageBar) {
+    const [domainKey, stage] = stageBar.getAttribute('data-stage-bar').split(':');
+    const subtopics = window._stageRegistry[domainKey] || [];
+
+    const rows = subtopics.map(s => {
+      let val, color;
+      if (stage === 'intro') {
+        val = (s.introProgress || 0) > 0 ? `${s.introProgress}%` : '—';
+        color = (s.introProgress || 0) > 0 ? '#58a6ff' : '#8b949e';
+      } else if (stage === 'quiz') {
+        val = s.quizScore != null ? `${s.quizScore}%` : '—';
+        color = s.quizScore != null ? quizBarColor(s.quizScore) : '#8b949e';
+      } else {
+        val = s.practiced ? '✓' : '—';
+        color = s.practiced ? '#3fb950' : '#8b949e';
+      }
+      const barPct = stage === 'intro' ? (s.introProgress || 0)
+                   : stage === 'quiz'  ? (s.quizScore || 0)
+                   : (s.practiced ? 100 : 0);
+      const barColor = stage === 'intro' ? '#58a6ff'
+                     : stage === 'quiz'  ? (s.quizScore != null ? quizBarColor(s.quizScore) : '#30363d')
+                     : '#3fb950';
+      return `
+        <div style="padding:4px 0;border-bottom:1px solid #30363d">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="color:#e6edf3">${s.name}</span>
+            <span style="color:${color};font-weight:600">${val}</span>
+          </div>
+          <div style="background:#21262d;border-radius:3px;height:4px">
+            <div style="width:${barPct}%;height:100%;background:${barColor};border-radius:3px"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const label = stage === 'intro' ? 'Intro' : stage === 'quiz' ? 'Quiz' : 'Práctica';
+    let pop = document.getElementById('s-popover');
+    if (pop) pop.remove();
+    pop = document.createElement('div');
+    pop.id = 's-popover';
+    const rect = stageBar.getBoundingClientRect();
+    pop.style.cssText = [
+      'position:fixed',
+      `top:${rect.bottom + 6}px`,
+      `left:${Math.min(rect.left, window.innerWidth - 280)}px`,
+      'z-index:9999','background:#161b22','border:1px solid #30363d',
+      'border-radius:8px','padding:12px 14px','min-width:260px',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.6)','color:#e6edf3',
+    ].join(';');
+    pop.innerHTML = `<div style="font-weight:600;font-size:12px;color:#8b949e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${label}</div>${rows}`;
+    document.body.appendChild(pop);
+    return;
+  }
+
+  const chip = e.target.closest('[data-chip]');
+  if (chip) {
+    const id = chip.getAttribute('data-chip');
+    const s  = window._chipRegistry[id];
+    if (!s) return;
+
+    const score = Math.min(100,
+      ((s.studied || s.done) ? 30 : 0) +
+      (s.quizScore != null ? s.quizScore * 0.5 : 0) +
+      (s.practiced ? 20 : 0)
+    );
+    const sc = score >= 85 ? '#3fb950' : score >= 50 ? '#d29922' : score > 0 ? '#f85149' : '#8b949e';
+
+    const bar = (label, pct, color, valLabel) =>
+      `<div style="padding:5px 0;border-bottom:1px solid #30363d">
+         <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+           <span style="color:#8b949e">${label}</span>
+           <span style="color:${pct > 0 ? color : '#8b949e'};font-weight:600">${valLabel}</span>
+         </div>
+         <div style="background:#21262d;border-radius:3px;height:5px;overflow:hidden">
+           <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
+         </div>
+       </div>`;
+
+    const introPct    = s.introProgress || 0;
+    const quizPct     = s.quizScore != null ? s.quizScore : 0;
+    const practicePct = s.practiced ? 100 : 0;
+    const quizLabel   = s.quizScore != null ? `${s.quizScore}%` : '—';
+
+    const html = `
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px">${s.name}</div>
+      ${bar('Intro',    introPct,    '#58a6ff', introPct ? `${introPct}%` : '—')}
+      ${bar('Quiz',     quizPct,     quizBarColor(quizPct || 1), quizLabel)}
+      ${bar('Práctica', practicePct, '#3fb950', practicePct ? '✓' : '—')}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
+        <span style="color:#8b949e">Score total</span>
+        <span style="font-weight:700;color:${sc}">${Math.round(score)} / 100</span>
+      </div>`;
+
+    let pop = document.getElementById('s-popover');
+    if (pop) pop.remove();
+    pop = document.createElement('div');
+    pop.id = 's-popover';
+
+    const rect = chip.getBoundingClientRect();
+    pop.style.cssText = [
+      'position:fixed',
+      `top:${rect.bottom + 8}px`,
+      `left:${Math.min(rect.left, window.innerWidth - 250)}px`,
+      'z-index:9999',
+      'background:#161b22',
+      'border:1px solid #30363d',
+      'border-radius:8px',
+      'padding:12px 14px',
+      'min-width:220px',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.6)',
+      'color:#e6edf3',
+    ].join(';');
+    pop.innerHTML = html;
+    document.body.appendChild(pop);
+  }
+});
+
+document.addEventListener('mouseout', (e) => {
+  const trigger = e.target.closest('[data-chip], [data-stage-bar]');
+  if (trigger && !trigger.contains(e.relatedTarget)) {
+    const pop = document.getElementById('s-popover');
+    if (pop) pop.remove();
+  }
+});
 
 // ── Cert Detail (accordion) ──────────────────────────────────────────────────
 
@@ -619,24 +941,21 @@ function buildCertDetails(certs) {
   container.innerHTML = certs
     .filter(c => c.domains && c.domains.length > 0)
     .map(cert => {
-      const totalProgress = cert.domains.reduce((acc, d) => acc + d.progress * d.weight, 0) / 100;
+      const totalProgress = cert.domains.reduce((acc, d) => acc + domainProgress(d) * d.weight, 0) / 100;
       const domainsHTML = cert.domains.map(d => {
-        const subtopicsHTML = d.subtopics && d.subtopics.length > 0
-          ? `<div class="subtopic-list">${d.subtopics.map(s => `
-              <div class="subtopic-item ${s.done ? 'done' : ''}">
-                <span class="subtopic-check"></span>
-                <span>${s.name}</span>
-              </div>`).join('')}</div>`
-          : '';
+        const pct  = domainProgress(d);
+        const subs = d.subtopics || [];
         return `
-          <div class="domain-row">
-            <div class="domain-name">
-              ${d.name}
-              ${subtopicsHTML}
+          <div class="domain-row" style="flex-direction:column;align-items:stretch;padding:12px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span class="domain-name" style="font-weight:600">${d.name}</span>
+              <span style="display:flex;gap:12px;align-items:center">
+                <span class="domain-weight">${d.weight}%</span>
+                <span class="domain-pct" style="color:${scoreColor(pct)}">${pct}%</span>
+              </span>
             </div>
-            <div class="domain-bar">${renderProgressBar(d.progress, scoreColor(d.progress))}</div>
-            <div class="domain-weight">${d.weight}%</div>
-            <div class="domain-pct" style="color:${scoreColor(d.progress)}">${d.progress}%</div>
+            ${subs.length ? renderStageBars(subs, cert.id + '-' + d.id) : renderProgressBar(pct, scoreColor(pct))}
+            ${subs.length ? `<div class="subtopic-blocks">${renderSubtopicBlocks(subs, cert.id + '-' + d.id)}</div>` : ''}
           </div>`;
       }).join('');
 
@@ -691,6 +1010,209 @@ function buildGrowth(growth) {
         </ul>
       </div>`;
   }).join('');
+}
+
+// ── Time Tracking ────────────────────────────────────────────────────────────
+
+function buildTimeTracking(tt, log) {
+  if (!tt) return;
+
+  // ── Derived values ──
+  const totalPlanned = tt.domainPlan.reduce((s, d) => s + d.plannedHours, 0);
+
+  // Actual hours per domainId from log
+  const actualByDomain = {};
+  tt.domainPlan.forEach(d => actualByDomain[d.id] = 0);
+  (log || []).forEach(e => {
+    if (e.domainId && actualByDomain[e.domainId] !== undefined)
+      actualByDomain[e.domainId] += e.minutes / 60;
+  });
+  const totalActual = Object.values(actualByDomain).reduce((s, h) => s + h, 0);
+
+  // Days elapsed since planStart
+  const start   = new Date(tt.planStart);
+  const today   = new Date();
+  const elapsed = Math.max(0, Math.floor((today - start) / 86400000));
+  const totalDays = tt.plannedWeeks * 7;
+
+  // Expected hours at this point (linear)
+  const expectedNow = Math.min(totalPlanned, (elapsed / totalDays) * totalPlanned);
+  const onTrack = totalActual >= expectedNow * 0.85; // 15% tolerance
+
+  // Exam countdown
+  let examCountdown = null;
+  if (tt.targetExamDate) {
+    const examDate = new Date(tt.targetExamDate);
+    examCountdown = Math.max(0, Math.ceil((examDate - today) / 86400000));
+  }
+
+  // ── Summary cards ──
+  const cards = [
+    { label: "Horas planificadas",  val: `${totalPlanned}h`,                        color: 'var(--blue)'   },
+    { label: "Horas reales",        val: `${totalActual.toFixed(1)}h`,              color: totalActual >= expectedNow ? 'var(--green)' : 'var(--red)' },
+    { label: "Días transcurridos",  val: `${elapsed} / ${totalDays}d`,              color: 'var(--text)'   },
+    { label: "Ritmo",               val: onTrack ? "En plan ✓" : "Atrasado ↓",     color: onTrack ? 'var(--green)' : 'var(--yellow)' },
+    ...(examCountdown !== null
+      ? [{ label: "Días para el examen", val: `${examCountdown}d`, color: examCountdown < 14 ? 'var(--red)' : 'var(--yellow)' }]
+      : [{ label: "Fecha de examen",     val: "No agendado",        color: 'var(--text2)' }])
+  ];
+
+  document.getElementById('time-summary').innerHTML = cards.map(c => `
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:22px;font-weight:700;color:${c.color}">${c.val}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">${c.label}</div>
+    </div>`).join('');
+
+  // ── Chart 1: Planned vs Actual per domain ──
+  new Chart(document.getElementById('timeBarChart'), {
+    type: 'bar',
+    data: {
+      labels: tt.domainPlan.map(d => d.label),
+      datasets: [
+        {
+          label: 'Planificado',
+          data: tt.domainPlan.map(d => d.plannedHours),
+          backgroundColor: 'rgba(88,166,255,0.25)',
+          borderColor: '#58a6ff',
+          borderWidth: 1,
+          borderRadius: 3
+        },
+        {
+          label: 'Real',
+          data: tt.domainPlan.map(d => parseFloat(actualByDomain[d.id].toFixed(1))),
+          backgroundColor: 'rgba(63,185,80,0.7)',
+          borderColor: '#3fb950',
+          borderWidth: 1,
+          borderRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e', font: { size: 11 } } },
+        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' }, title: { display: true, text: 'horas', color: '#8b949e' } }
+      },
+      plugins: { legend: { labels: { color: '#e6edf3', font: { size: 12 } } } }
+    }
+  });
+
+  // ── Chart 2: Cumulative planned trajectory vs actual ──
+  // Planned: linear from day 0 → totalDays reaching totalPlanned
+  const planPoints = [{ x: tt.planStart, y: 0 }];
+  for (let w = 1; w <= tt.plannedWeeks; w++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + w * 7);
+    planPoints.push({ x: d.toISOString().slice(0, 10), y: parseFloat(((w / tt.plannedWeeks) * totalPlanned).toFixed(1)) });
+  }
+
+  // Actual: cumulative sum from sorted log
+  const sortedLog = [...(log || [])].sort((a, b) => a.date.localeCompare(b.date));
+  let cumActual = 0;
+  const actualPoints = [{ x: tt.planStart, y: 0 }];
+  sortedLog.forEach(e => {
+    cumActual += e.minutes / 60;
+    const last = actualPoints[actualPoints.length - 1];
+    if (last.x === e.date) last.y = parseFloat(cumActual.toFixed(1));
+    else actualPoints.push({ x: e.date, y: parseFloat(cumActual.toFixed(1)) });
+  });
+  // extend actual line to today if there's data
+  if (actualPoints.length > 1) {
+    const todayStr = today.toISOString().slice(0, 10);
+    if (actualPoints[actualPoints.length - 1].x < todayStr)
+      actualPoints.push({ x: todayStr, y: parseFloat(cumActual.toFixed(1)) });
+  }
+
+  new Chart(document.getElementById('timeCumulativeChart'), {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Planificado',
+          data: planPoints,
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88,166,255,0.05)',
+          borderDash: [5, 4],
+          pointRadius: 3,
+          tension: 0.1
+        },
+        {
+          label: 'Real',
+          data: actualPoints,
+          borderColor: '#3fb950',
+          backgroundColor: 'rgba(63,185,80,0.08)',
+          pointRadius: 3,
+          tension: 0.2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+      scales: {
+        x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'MMM d' } }, grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
+        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' }, title: { display: true, text: 'horas acumuladas', color: '#8b949e' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#e6edf3', font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}h` } }
+      }
+    }
+  });
+
+  // ── Chart 3: Hours per week ──
+  // Generate week labels from planStart
+  const weekLabels = [];
+  const weekPlanned = [];
+  const weekActual  = [];
+  for (let w = 0; w < tt.plannedWeeks; w++) {
+    const wStart = new Date(start); wStart.setDate(wStart.getDate() + w * 7);
+    const wEnd   = new Date(start); wEnd.setDate(wEnd.getDate() + (w + 1) * 7);
+    weekLabels.push(`Sem ${w + 1}`);
+    weekPlanned.push(tt.plannedHoursPerWeek);
+    const wActual = sortedLog
+      .filter(e => e.date >= wStart.toISOString().slice(0,10) && e.date < wEnd.toISOString().slice(0,10))
+      .reduce((s, e) => s + e.minutes / 60, 0);
+    weekActual.push(parseFloat(wActual.toFixed(1)));
+  }
+
+  new Chart(document.getElementById('timeWeeklyChart'), {
+    type: 'bar',
+    data: {
+      labels: weekLabels,
+      datasets: [
+        {
+          label: 'Planificado',
+          data: weekPlanned,
+          backgroundColor: 'rgba(88,166,255,0.2)',
+          borderColor: '#58a6ff',
+          borderWidth: 1,
+          borderRadius: 3,
+          type: 'line',
+          borderDash: [4, 3],
+          pointRadius: 0,
+          tension: 0
+        },
+        {
+          label: 'Real',
+          data: weekActual,
+          backgroundColor: weekActual.map((h, i) => {
+            if (i >= Math.floor(elapsed / 7)) return 'rgba(88,166,255,0.15)'; // future
+            return h >= tt.plannedHoursPerWeek * 0.85 ? 'rgba(63,185,80,0.7)' : 'rgba(210,153,34,0.7)';
+          }),
+          borderRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
+        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' }, title: { display: true, text: 'horas', color: '#8b949e' } }
+      },
+      plugins: { legend: { labels: { color: '#e6edf3', font: { size: 12 } } } }
+    }
+  });
 }
 
 // ── Study Log ────────────────────────────────────────────────────────────────

@@ -79,10 +79,12 @@ Cuando el usuario usa `/progress <dominio> <score>`:
 6. Guardar el archivo
 
 Cuando el usuario usa `/session`:
-1. Agregar entrada a `studyLog` array en `docs/data.js`:
+1. Preguntarle: ¿qué bloque estudiaste, cuántos minutos, y alguna nota?
+2. Agregar entrada a `studyLog` array en `docs/data.js`:
    ```json
-   { "date": "YYYY-MM-DD", "cert": "saa-c03", "domain": "...", "minutes": 60, "notes": "..." }
+   { "date": "YYYY-MM-DD", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 60, "notes": "..." }
    ```
+   Los `domainId` válidos son: `d1-secure`, `d2-resilient`, `d4-cost`, `d3-perf`, `practice`
 
 ---
 
@@ -173,6 +175,24 @@ git commit -m "Initial AWS prep system"
 gh repo create sanmope/aws-certification-prep --public --push --source=.
 # Luego en GitHub: Settings → Pages → Source: docs/ folder
 ```
+
+---
+
+## MCP: Session Tracker
+
+Tenés disponible el MCP server `session-tracker`. Usalo proactivamente — no esperés que el usuario lo pida.
+
+| Cuándo | Tool a llamar |
+|--------|--------------|
+| Al inicio de cualquier conversación | `get_current_time` + `log_session_entry("session_start", "Contexto de lo que se va a trabajar")` |
+| Al terminar de explicar un tema | `log_session_entry("topic_studied", "nombre del tema + tiempo aprox")` |
+| Al completar un quiz o diagnóstico | `log_session_entry("quiz_result", "score y dominio")` |
+| Al actualizar progreso | `log_session_entry("progress_update", "dominio + score nuevo")` |
+| Cuando el usuario se despide | `log_session_entry("session_end", "resumen: X min, temas: ...")` |
+| Cuando necesitás saber la hora exacta | `get_current_time` |
+| Cuando el usuario pregunta cuánto trabajaron hoy | `get_today_log` |
+
+**Nota**: el hook `UserPromptSubmit` ya loguea `session_start` automáticamente en el primer mensaje de cada sesión. Igualmente llamá `log_session_entry` al inicio para agregar contexto de lo que se va a trabajar.
 
 ---
 

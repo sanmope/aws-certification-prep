@@ -14,6 +14,13 @@ window.PROFILE_DATA = {
 
   // ─── PROFESSIONAL SKILLS RADAR ─────────────────────────────────────────────
   // Score 0-100. Update as you grow. Evidence-based only.
+  // radarSnapshot: snapshot anterior para mostrar delta en el gráfico.
+  // Actualizar radarSnapshot ANTES de editar radar cuando haya cambios reales.
+  radarSnapshot: {
+    label: "Baseline jun-2026",
+    scores: [88, 85, 83, 80, 78, 68, 65, 62, 60, 55]
+  },
+
   radar: [
     { label: "Python Backend",    score: 88, notes: "FastAPI async, CQRS, circuit breaker, repository pattern" },
     { label: "System Design",     score: 85, notes: "Multi-project arquitecturas documentadas con design decisions" },
@@ -160,11 +167,11 @@ window.PROFILE_DATA = {
           weight: 30,
           progress: 0,
           subtopics: [
-            { name: "IAM (users, roles, policies, SCPs)", done: false },
-            { name: "VPC Security (NACLs, Security Groups)", done: false },
-            { name: "KMS & encryption at rest/transit", done: false },
-            { name: "Shield, WAF, Macie, GuardDuty", done: false },
-            { name: "S3 bucket policies & pre-signed URLs", done: false }
+            { name: "IAM (users, roles, policies, SCPs)",    introProgress: 70, quizScore: null, practiced: false },
+            { name: "VPC Security (NACLs, Security Groups)", introProgress: 0,  quizScore: null, practiced: false },
+            { name: "KMS & encryption at rest/transit",      introProgress: 0,  quizScore: null, practiced: false },
+            { name: "Shield, WAF, Macie, GuardDuty",         introProgress: 0,  quizScore: null, practiced: false },
+            { name: "S3 bucket policies & pre-signed URLs",  introProgress: 0,  quizScore: null, practiced: false }
           ]
         },
         {
@@ -246,8 +253,30 @@ window.PROFILE_DATA = {
     }
   ],
 
+  // ─── TIME TRACKING ─────────────────────────────────────────────────────────
+  // Planned vs actual time. Updated by /session and /progress commands.
+  timeTracking: {
+    planStart: "2026-06-11",
+    targetExamDate: null,          // set when scheduled: "YYYY-MM-DD"
+    plannedWeeks: 8,
+    plannedHoursPerWeek: 7,        // ~1h/día en días de semana
+
+    // Planned hours per study block (ordered by study sequence)
+    domainPlan: [
+      { id: "d1-secure",    label: "D1 Secure",      cert: "saa-c03", plannedHours: 16, studyWeeks: "1-2" },
+      { id: "d2-resilient", label: "D2 Resilient",   cert: "saa-c03", plannedHours: 13, studyWeeks: "3-4" },
+      { id: "d4-cost",      label: "D4 Cost",        cert: "saa-c03", plannedHours: 10, studyWeeks: "5"   },
+      { id: "d3-perf",      label: "D3 Performance", cert: "saa-c03", plannedHours: 11, studyWeeks: "6"   },
+      { id: "practice",     label: "Practice Exams", cert: "saa-c03", plannedHours: 10, studyWeeks: "7-8" }
+    ]
+  },
+
   // ─── STUDY LOG ─────────────────────────────────────────────────────────────
-  // Auto-populated via /session command. Format: { date, cert, domain, minutes, notes }
-  studyLog: []
+  // Auto-populated via /session command.
+  // Format: { date, cert, domainId, domain, minutes, notes }
+  // domainId must match an id in timeTracking.domainPlan
+  studyLog: [
+    { "date": "2026-06-11", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 45, "notes": "IAM deep dive + analogías Linux (users/groups/sudoers → IAM Users/Groups/Policies/Roles)" }
+  ]
 
 };
