@@ -276,7 +276,8 @@ window.PROFILE_DATA = {
   // Format: { date, cert, domainId, domain, minutes, notes }
   // domainId must match an id in timeTracking.domainPlan
   studyLog: [
-    { "date": "2026-06-11", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 45, "notes": "IAM deep dive + analogías Linux (users/groups/sudoers → IAM Users/Groups/Policies/Roles)" }
+    { "date": "2026-06-11", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 45, "notes": "IAM deep dive + analogías Linux (users/groups/sudoers → IAM Users/Groups/Policies/Roles)" },
+    { "date": "2026-06-11", "cert": "saa-c03", "domainId": "practice",  "domain": "Setup",                   "minutes": 98, "notes": "Dashboard + notes.html: sistema three-stage (introProgress/quizScore/practiced), popovers, radar snapshot" }
   ]
 
 };
