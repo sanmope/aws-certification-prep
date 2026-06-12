@@ -405,7 +405,7 @@ function renderSection(sec) {
         </table>
       </div>`;
 
-    case 'lab':
+    case 'lab': {
       const badge = sec.result === 'pass'
         ? '<span style="color:#3fb950;font-weight:700">✓ PASS</span>'
         : '<span style="color:#f85149;font-weight:700">✗ FAIL</span>';
@@ -422,6 +422,7 @@ function renderSection(sec) {
           <ul class="lab-learnings">${learnings}</ul>
         </div>
       </div>`;
+    }
 
     default:
       return '';
