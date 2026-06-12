@@ -288,6 +288,59 @@ window.CONTENT_DATA = {
             { id: "cost-tools", name: "Cost tools", fullName: "Cost Explorer & Budgets", lastStudied: null, sections: [] },
             { id: "data-transfer", name: "Data transfer costs", fullName: "Data transfer costs", lastStudied: null, sections: [] }
           ]
+        },
+
+        {
+          id: "ref",
+          name: "Referencia",
+          subtopics: [
+            {
+              id: "glossary",
+              name: "Glosario",
+              fullName: "Glosario — Siglas y términos clave",
+              lastStudied: "2026-06-12",
+              sections: [
+                {
+                  type: "glossary",
+                  title: "Siglas y acrónimos",
+                  items: [
+                    { term: "ACL",    full: "Access Control List",            desc: "Lista de reglas de control de acceso. En AWS se usa como sinónimo de NACL." },
+                    { term: "ALB",    full: "Application Load Balancer",       desc: "Load balancer L7 (HTTP/HTTPS). Enruta por path, host, headers, query string." },
+                    { term: "AMI",    full: "Amazon Machine Image",            desc: "Imagen de disco (OS + software) para lanzar instancias EC2." },
+                    { term: "ARN",    full: "Amazon Resource Name",            desc: "ID único de cualquier recurso AWS. Formato: arn:aws:servicio:región:account:recurso" },
+                    { term: "ASG",    full: "Auto Scaling Group",              desc: "Grupo de instancias EC2 que escala según políticas (CPU, requests, custom metric)." },
+                    { term: "AZ",     full: "Availability Zone",               desc: "Data center aislado dentro de una región. Una región tiene 2-6 AZs." },
+                    { term: "CDK",    full: "Cloud Development Kit",           desc: "IaC en lenguaje de programación (Python, TS). Compila a CloudFormation." },
+                    { term: "CIDR",   full: "Classless Inter-Domain Routing",  desc: "Notación de rangos de IP. Ej: 10.0.0.0/16 = 65.536 IPs." },
+                    { term: "EC2",    full: "Elastic Compute Cloud",           desc: "Instancias virtuales (VMs). El bloque base de cómputo en AWS." },
+                    { term: "ECS",    full: "Elastic Container Service",       desc: "Orquestador de contenedores managed de AWS. Alternativa a K8s." },
+                    { term: "EIP",    full: "Elastic IP",                      desc: "IP pública estática que se puede reasignar entre instancias EC2." },
+                    { term: "EKS",    full: "Elastic Kubernetes Service",      desc: "K8s managed de AWS. Controlplane gestionado por AWS, workers propios o Fargate." },
+                    { term: "ENI",    full: "Elastic Network Interface",       desc: "NIC virtual de EC2. Los Security Groups se attachan al ENI, no a la instancia." },
+                    { term: "IAM",    full: "Identity and Access Management",  desc: "Servicio central de authn/authz. Global, no regional. Usuarios, grupos, roles, policies." },
+                    { term: "IGW",    full: "Internet Gateway",                desc: "Componente que conecta una VPC a internet. 1 IGW por VPC." },
+                    { term: "IMDSv2", full: "Instance Metadata Service v2",    desc: "Endpoint 169.254.169.254 — metadatos e IAM credentials desde la instancia EC2." },
+                    { term: "KMS",    full: "Key Management Service",          desc: "Gestión de claves de cifrado (CMKs). Análogo a Fernet pero managed y auditado." },
+                    { term: "MFA",    full: "Multi-Factor Authentication",     desc: "Segundo factor de authn. En AWS: TOTP (Google Authenticator / Authy)." },
+                    { term: "NACL",   full: "Network Access Control List",     desc: "Firewall stateless a nivel de subnet. Reglas ordenadas numéricamente, first-match." },
+                    { term: "NLB",    full: "Network Load Balancer",           desc: "Load balancer L4 (TCP/UDP). Muy bajo latencia, IP estática, millones de req/s." },
+                    { term: "OU",     full: "Organizational Unit",             desc: "Contenedor de cuentas dentro de AWS Organizations. SCPs se aplican a OUs." },
+                    { term: "RT",     full: "Route Table",                     desc: "Tabla de rutas asociada a una subnet. Define hacia dónde va el tráfico." },
+                    { term: "S3",     full: "Simple Storage Service",          desc: "Almacenamiento de objetos. Buckets + keys. 11 nueves de durabilidad. Sin límite de tamaño." },
+                    { term: "SCP",    full: "Service Control Policy",          desc: "Policy de Organizations que limita permisos posibles en una cuenta. No otorga permisos." },
+                    { term: "SG",     full: "Security Group",                  desc: "Firewall stateful a nivel de ENI. Solo Allow. Puede referenciar otros SGs en reglas." },
+                    { term: "SNS",    full: "Simple Notification Service",     desc: "Pub/sub messaging. Un topic → múltiples subscribers (SQS, Lambda, email, HTTP)." },
+                    { term: "SQS",    full: "Simple Queue Service",            desc: "Cola de mensajes managed. Análogo a Celery+Redis broker, pero serverless." },
+                    { term: "SSM",    full: "Systems Manager",                 desc: "Suite de gestión. Parameter Store (config/secrets), Session Manager (SSH sin puerto 22)." },
+                    { term: "SSO",    full: "Single Sign-On (IAM Identity Center)", desc: "Federación con AD/SAML para acceso SSO multi-cuenta. Antes llamado AWS SSO." },
+                    { term: "STS",    full: "Security Token Service",          desc: "Emite credenciales temporales. AssumeRole → AccessKey + SecretKey + SessionToken (TTL: 1h)." },
+                    { term: "VPC",    full: "Virtual Private Cloud",           desc: "Red virtual privada aislada. Contiene subnets, route tables, NACLs, SGs, IGW." },
+                    { term: "WAF",    full: "Web Application Firewall",        desc: "Firewall L7. Bloquea por IP, país, headers, body patterns, rate limiting." }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }
