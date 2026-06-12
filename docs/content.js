@@ -111,6 +111,21 @@ window.CONTENT_DATA = {
                     { linux: "PAM module que bloquea syscalls", aws: "SCP" },
                     { linux: "chown / chmod en el archivo", aws: "Resource-based Policy" }
                   ]
+                },
+
+                {
+                  type: "lab",
+                  title: "Lab 1 — Least privilege con boto3",
+                  result: "pass",
+                  date: "2026-06-12",
+                  objective: "Crear un IAM Role que solo permita s3:GetObject en un bucket específico y verificar que least privilege funciona de verdad.",
+                  output: "GET object: b'hola desde el lab'\nPutObject bloqueado: AccessDenied\nListBuckets bloqueado: AccessDenied",
+                  learnings: [
+                    "El trust policy define QUIÉN puede asumir el role — si falta el principal, STS lanza AccessDenied en AssumeRole, no en la operación S3.",
+                    "Las credenciales temporales van al boto3.client(), no a cada operación individual.",
+                    "IAM necesita ~10s para propagar cambios de policy — sin sleep, AssumeRole puede devolver creds con permisos viejos.",
+                    "Resource ARN específico (arn:aws:s3:::bucket/*) vs * — la diferencia es real y verificable."
+                  ]
                 }
 
               ]
@@ -120,8 +135,67 @@ window.CONTENT_DATA = {
               id: "vpc-security",
               name: "VPC Security",
               fullName: "VPC Security — NACLs & Security Groups",
-              lastStudied: null,
-              sections: []
+              lastStudied: "2026-06-12",
+              sections: [
+
+                {
+                  type: "analogy",
+                  title: "Analogía",
+                  content: "<strong>Security Groups = iptables con conntrack (stateful)</strong> — si abrís el puerto, la respuesta vuelve sola.<br><strong>NACLs = iptables sin conntrack (stateless)</strong> — necesitás reglas explícitas para ambas direcciones, incluyendo puertos efímeros."
+                },
+
+                {
+                  type: "concepts",
+                  title: "Conceptos clave",
+                  items: [
+                    {
+                      term: "Security Groups — capa de instancia (ENI)",
+                      body: "Stateful, solo Allow, todas las reglas se evalúan. La feature más importante: podés referenciar otros SGs en vez de IPs — si el ALB escala, la regla sigue válida.",
+                      code: `ALB SG  → acepta 443 desde 0.0.0.0/0\nEC2 SG  → acepta 8080 solo desde el SG del ALB   ← referencia por SG, no IP\nRDS SG  → acepta 5432 solo desde el SG de EC2`
+                    },
+                    {
+                      term: "NACLs — capa de subnet",
+                      body: "Stateless, Allow + Deny, primera regla que matchea gana. Dejá gaps en los números (100, 200) para poder insertar reglas después.",
+                      code: `Regla 100: Allow TCP 443 desde 0.0.0.0/0\nRegla 200: Allow TCP 80  desde 0.0.0.0/0\nRegla 300: Deny  TCP 22  desde 0.0.0.0/0\nRegla *  : Deny  todo   (implícito)`
+                    },
+                    {
+                      term: "El gotcha de los puertos efímeros",
+                      body: "Con NACLs stateless, las respuestas al cliente usan puertos efímeros (1024-65535). Sin una regla outbound que los permita, las respuestas se bloquean aunque la request entró bien.",
+                      code: `NACL outbound de la subnet del servidor:\n  Regla 100: Allow TCP 1024-65535 → 0.0.0.0/0  ← respuestas a clientes`
+                    },
+                    {
+                      term: "Patrón 3 capas",
+                      body: "El más común en el examen. La subnet de RDS no tiene route a internet — aunque alguien comprometiera el SG, no hay salida.",
+                      code: `Internet → ALB (public subnet)  → EC2/ECS (private subnet) → RDS (private, sin internet)`
+                    }
+                  ]
+                },
+
+                {
+                  type: "exam",
+                  title: "Tips de examen",
+                  items: [
+                    "Bloquear una IP específica → NACL (SG no tiene Deny explícito).",
+                    "NACL permite pero no funciona → olvidaron la regla outbound de puertos efímeros (1024-65535).",
+                    "RDS no recibe conexiones → SG de RDS no referencia el SG de EC2.",
+                    "EC2 no puede conectarse a internet → verificar route table, IGW, y SG outbound.",
+                    "Múltiples instancias necesitan el mismo acceso → referencia entre SGs, no copiar reglas por IP."
+                  ]
+                },
+
+                {
+                  type: "conditions",
+                  title: "SG vs NACL — decisión rápida",
+                  items: [
+                    { key: "Bloquear IP maliciosa", use: "NACL" },
+                    { key: "Control por instancia individual", use: "Security Group" },
+                    { key: "Control por subnet entera", use: "NACL" },
+                    { key: "Allow de respuestas automático", use: "Security Group (stateful)" },
+                    { key: "Auditar tráfico entre subnets", use: "NACL + VPC Flow Logs" }
+                  ]
+                }
+
+              ]
             },
             {
               id: "kms",
