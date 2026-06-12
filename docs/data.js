@@ -167,7 +167,7 @@ window.PROFILE_DATA = {
           weight: 30,
           progress: 0,
           subtopics: [
-            { name: "IAM (users, roles, policies, SCPs)",    introProgress: 70, quizScore: null, practiced: true },
+            { name: "IAM (users, roles, policies, SCPs)",    introProgress: 70, quizScore: 80,   practiced: true },
             { name: "VPC Security (NACLs, Security Groups)", introProgress: 60, quizScore: null, practiced: false },
             { name: "KMS & encryption at rest/transit",      introProgress: 0,  quizScore: null, practiced: false },
             { name: "Shield, WAF, Macie, GuardDuty",         introProgress: 0,  quizScore: null, practiced: false },
@@ -279,7 +279,8 @@ window.PROFILE_DATA = {
     { "date": "2026-06-11", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 45, "notes": "IAM deep dive + analogías Linux (users/groups/sudoers → IAM Users/Groups/Policies/Roles)" },
     { "date": "2026-06-11", "cert": "saa-c03", "domainId": "practice",  "domain": "Setup",                   "minutes": 98, "notes": "Dashboard + notes.html: sistema three-stage (introProgress/quizScore/practiced), popovers, radar snapshot" },
     { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 30, "notes": "VPC Security: NACLs, Security Groups, puertos efímeros, patrón 3 capas" },
-    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "practice",  "domain": "Lab IAM",                 "minutes": 45, "notes": "Lab boto3: IAM Role + trust policy + least privilege S3. GET ✓, PutObject ✗, ListBuckets ✗" }
+    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "practice",  "domain": "Lab IAM",                 "minutes": 45, "notes": "Lab boto3: IAM Role + trust policy + least privilege S3. GET ✓, PutObject ✗, ListBuckets ✗" },
+    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 20, "notes": "Quiz IAM 5 preguntas — 4/5 (80%). Débil: cross-account DynamoDB → role assumption, no resource-based policy" }
   ]
 
 };
