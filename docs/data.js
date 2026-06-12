@@ -7,7 +7,7 @@ window.PROFILE_DATA = {
   meta: {
     name: "Santiago Lopez",
     github: "sanmope",
-    lastUpdated: "2026-06-11",
+    lastUpdated: "2026-06-12",
     currentFocus: "saa-c03",
     targetRoles: ["Cloud Solutions Architect", "Senior Backend Engineer", "ML Engineer"]
   },
@@ -168,7 +168,7 @@ window.PROFILE_DATA = {
           progress: 0,
           subtopics: [
             { name: "IAM (users, roles, policies, SCPs)",    introProgress: 70, quizScore: 80,   practiced: true },
-            { name: "VPC Security (NACLs, Security Groups)", introProgress: 60, quizScore: null, practiced: false },
+            { name: "VPC Security (NACLs, Security Groups)", introProgress: 65, quizScore: null, practiced: false },
             { name: "KMS & encryption at rest/transit",      introProgress: 0,  quizScore: null, practiced: false },
             { name: "Shield, WAF, Macie, GuardDuty",         introProgress: 0,  quizScore: null, practiced: false },
             { name: "S3 bucket policies & pre-signed URLs",  introProgress: 0,  quizScore: null, practiced: false }
@@ -280,7 +280,9 @@ window.PROFILE_DATA = {
     { "date": "2026-06-11", "cert": "saa-c03", "domainId": "practice",  "domain": "Setup",                   "minutes": 98, "notes": "Dashboard + notes.html: sistema three-stage (introProgress/quizScore/practiced), popovers, radar snapshot" },
     { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 30, "notes": "VPC Security: NACLs, Security Groups, puertos efímeros, patrón 3 capas" },
     { "date": "2026-06-12", "cert": "saa-c03", "domainId": "practice",  "domain": "Lab IAM",                 "minutes": 45, "notes": "Lab boto3: IAM Role + trust policy + least privilege S3. GET ✓, PutObject ✗, ListBuckets ✗" },
-    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 20, "notes": "Quiz IAM 5 preguntas — 4/5 (80%). Débil: cross-account DynamoDB → role assumption, no resource-based policy" }
+    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 20, "notes": "Quiz IAM 5 preguntas — 4/5 (80%). Débil: cross-account DynamoDB → role assumption, no resource-based policy" },
+    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "d1-secure", "domain": "D1 Secure Architectures", "minutes": 30, "notes": "VPC Security profundizado: ENI (NIC virtual, SGs se attachan al ENI), analogía OSI (SG y NACL ambos L3/L4, WAF es L7), SSM Parameter Store, Tags. lab_vpc_security.py creado, pendiente correr." },
+    { "date": "2026-06-12", "cert": "saa-c03", "domainId": "practice",  "domain": "Referencia",              "minutes": 15, "notes": "Glosario agregado a notes.html: 32 siglas (ACL, ALB, ARN, ENI, NACL, SCP, STS, VPC, WAF, etc.) ordenadas alfabéticamente." }
   ]
 
 };
