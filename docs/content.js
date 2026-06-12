@@ -89,6 +89,27 @@ window.CONTENT_DATA = {
                 },
 
                 {
+                  type: "resource-policy-map",
+                  title: "¿Qué servicios soportan resource-based policies?",
+                  supported: [
+                    { service: "S3",              policy: "Bucket policy" },
+                    { service: "SQS",             policy: "Queue policy" },
+                    { service: "SNS",             policy: "Topic policy" },
+                    { service: "Lambda",          policy: "Function policy" },
+                    { service: "KMS",             policy: "Key policy" },
+                    { service: "Secrets Manager", policy: "Resource policy" },
+                    { service: "API Gateway",     policy: "Resource policy" }
+                  ],
+                  notSupported: [
+                    { service: "DynamoDB", mechanism: "Role assumption" },
+                    { service: "EC2",      mechanism: "Role assumption" },
+                    { service: "RDS",      mechanism: "Role assumption" },
+                    { service: "ECS",      mechanism: "Role assumption" }
+                  ],
+                  tip: "Regla mnemónica: si el servicio tiene un 'objeto compartible' (bucket, cola, función, clave) → probablemente tiene resource-based policy. Si es infraestructura (base de datos, instancia) → role assumption."
+                },
+
+                {
                   type: "antipatterns",
                   title: "Anti-patrones (distractores en el examen)",
                   items: [

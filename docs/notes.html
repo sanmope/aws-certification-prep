@@ -389,6 +389,25 @@ function renderSection(sec) {
       </div>`;
     }
 
+    case 'resource-policy-map': {
+      const suppRows = sec.supported.map(r =>
+        `<tr><td style="color:var(--green)">${r.service}</td><td style="color:var(--text2)">${r.policy}</td><td style="color:var(--green);text-align:center">✓</td></tr>`
+      ).join('');
+      const noRows = sec.notSupported.map(r =>
+        `<tr><td style="color:var(--red)">${r.service}</td><td style="color:var(--text2)">${r.mechanism}</td><td style="color:var(--red);text-align:center">✗</td></tr>`
+      ).join('');
+      return `<div class="section">
+        <div class="section-title">${sec.title}</div>
+        <table class="map-table">
+          <thead><tr><th>Servicio</th><th>Policy / Mecanismo</th><th style="text-align:center">Soporta</th></tr></thead>
+          <tbody>${suppRows}${noRows}</tbody>
+        </table>
+        <div style="margin-top:10px;padding:10px 12px;background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:6px;font-size:12px;color:var(--text2)">
+          💡 ${sec.tip}
+        </div>
+      </div>`;
+    }
+
     case 'antipatterns': {
       const anti = sec.items.map(i => `<li>${i}</li>`).join('');
       return `<div class="section">
