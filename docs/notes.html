@@ -358,7 +358,7 @@ function renderSection(sec) {
         <div class="analogy-box">${sec.content}</div>
       </div>`;
 
-    case 'concepts':
+    case 'concepts': {
       const concepts = sec.items.map(item => `
         <div class="concept">
           <div class="concept-term">${item.term}</div>
@@ -369,8 +369,9 @@ function renderSection(sec) {
         <div class="section-title">${sec.title}</div>
         ${concepts}
       </div>`;
+    }
 
-    case 'conditions':
+    case 'conditions': {
       const rows = sec.items.map(i =>
         `<tr><td>${escHtml(i.key)}</td><td>${escHtml(i.use)}</td></tr>`
       ).join('');
@@ -378,22 +379,25 @@ function renderSection(sec) {
         <div class="section-title">${sec.title}</div>
         <table class="cond-table"><tbody>${rows}</tbody></table>
       </div>`;
+    }
 
-    case 'exam':
+    case 'exam': {
       const tips = sec.items.map(i => `<li>${i}</li>`).join('');
       return `<div class="section">
         <div class="section-title">${sec.title}</div>
         <ul class="tip-list">${tips}</ul>
       </div>`;
+    }
 
-    case 'antipatterns':
+    case 'antipatterns': {
       const anti = sec.items.map(i => `<li>${i}</li>`).join('');
       return `<div class="section">
         <div class="section-title">${sec.title}</div>
         <ul class="anti-list">${anti}</ul>
       </div>`;
+    }
 
-    case 'linux-map':
+    case 'linux-map': {
       const mapRows = sec.items.map(i =>
         `<tr><td>${escHtml(i.linux)}</td><td>${escHtml(i.aws)}</td></tr>`
       ).join('');
@@ -404,6 +408,7 @@ function renderSection(sec) {
           <tbody>${mapRows}</tbody>
         </table>
       </div>`;
+    }
 
     case 'lab': {
       const badge = sec.result === 'pass'
