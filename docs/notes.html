@@ -415,6 +415,14 @@ function renderSection(sec) {
         ? '<span style="color:#3fb950;font-weight:700">✓ PASS</span>'
         : '<span style="color:#f85149;font-weight:700">✗ FAIL</span>';
       const learnings = sec.learnings.map(l => `<li>${l}</li>`).join('');
+      const fnTable = sec.functions ? `
+        <table class="cond-table" style="margin-top:12px">
+          <thead><tr>
+            <th style="padding:6px 10px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Función</th>
+            <th style="padding:6px 10px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Qué hace</th>
+          </tr></thead>
+          <tbody>${sec.functions.map(f => `<tr><td>${escHtml(f.name)}</td><td>${escHtml(f.desc)}</td></tr>`).join('')}</tbody>
+        </table>` : '';
       return `<div class="section">
         <div class="section-title">${sec.title}</div>
         <div class="lab-box">
@@ -424,6 +432,7 @@ function renderSection(sec) {
           </div>
           <div class="lab-objective">${sec.objective}</div>
           <div class="lab-output">${escHtml(sec.output)}</div>
+          ${fnTable}
           <ul class="lab-learnings">${learnings}</ul>
         </div>
       </div>`;

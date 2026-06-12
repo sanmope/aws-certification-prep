@@ -120,6 +120,19 @@ window.CONTENT_DATA = {
                   date: "2026-06-12",
                   objective: "Crear un IAM Role que solo permita s3:GetObject en un bucket específico y verificar que least privilege funciona de verdad.",
                   output: "GET object: b'hola desde el lab'\nPutObject bloqueado: AccessDenied\nListBuckets bloqueado: AccessDenied",
+                  functions: [
+                    { name: "sts.get_caller_identity()", desc: "¿Quién soy yo? — devuelve Account ID, User ARN" },
+                    { name: "s3.create_bucket()", desc: "Crea el bucket" },
+                    { name: "s3.put_object()", desc: "Sube un objeto al bucket" },
+                    { name: "iam.create_role()", desc: "Crea el role con su trust policy (quién puede asumirlo)" },
+                    { name: "iam.update_assume_role_policy()", desc: "Actualiza solo el trust policy de un role existente" },
+                    { name: "iam.get_role()", desc: "Lee los datos de un role — usamos solo el ARN" },
+                    { name: "iam.put_role_policy()", desc: "Agrega/reemplaza una inline policy al role (qué puede hacer)" },
+                    { name: "sts.assume_role()", desc: "Convertite en ese role — devuelve credenciales temporales" },
+                    { name: "s3_as_role.get_object()", desc: "Lee un objeto del bucket con las credenciales del role" },
+                    { name: "s3_as_role.put_object()", desc: "Intenta escribir — debería fallar (AccessDenied)" },
+                    { name: "s3_as_role.list_buckets()", desc: "Intenta listar todos los buckets — debería fallar (AccessDenied)" }
+                  ],
                   learnings: [
                     "El trust policy define QUIÉN puede asumir el role — si falta el principal, STS lanza AccessDenied en AssumeRole, no en la operación S3.",
                     "Las credenciales temporales van al boto3.client(), no a cada operación individual.",
